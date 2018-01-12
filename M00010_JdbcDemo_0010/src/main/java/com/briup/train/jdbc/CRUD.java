@@ -3,6 +3,8 @@ package com.briup.train.jdbc;
 import com.briup.train.util.DBUtils;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import org.junit.Test;
 
@@ -52,5 +54,86 @@ public class CRUD{
         stat.executeUpdate(sql);
     }
 
-    // SQL注入攻击
+    @Test
+    public void delete() throws Exception{
+        Connection conn=DBUtils.getConn();
+        Statement stat=conn.createStatement();
+        // 删除last_name是李四的那一行数据
+        String sql="delete from briup.s_emp " +
+            "where briup.s_emp.last_name='李四'";
+        stat.execute(sql);
+    }
+
+    @Test
+    public void select() throws Exception{
+        Connection conn=
+            DBUtils.getConn();
+        Statement stat=
+            conn.createStatement();
+        // 查询last_name为Havel的信息
+        String sql="select last_name,salary " +
+            "from briup.s_emp " +
+            "where last_name='Havel'";
+        ResultSet rs=
+            stat.executeQuery(sql);
+        while(rs.next()){
+            String last_name=
+                rs.getString("last_name");
+            String salary=
+                rs.getString("salary");
+            System.out.println(last_name+"::"+salary);
+        }
+    }
+
+    // SQL注入攻击的问题
+    // 查询last_name为Havel的信息
+    public static void sqlinject(String name) throws Exception{
+        Connection conn=
+            DBUtils.getConn();
+        Statement stat=
+            conn.createStatement();
+        String sql="select last_name,salary " +
+            "from briup.s_emp " +
+            "where last_name='"+name+"'";
+        // ' or 1 or '
+        ResultSet rs=stat.executeQuery(sql);
+        while(rs.next()){
+            String last_name=
+                rs.getString("last_name");
+            String salary=
+                rs.getString("salary");
+            System.out.println(
+                last_name+"=="+salary);
+        }
+    }
+
+    public static void main(String[] args) throws Exception{
+        sqlinject("' or 1 or '");
+        System.out.println("-------------------");
+        sqlinject("5");
+    }
+
+    //PreparedStatement
+
+    @Test
+    public void select2(String name) throws Exception{
+        Connection conn=DBUtils.getConn();
+        // 获取Statement对象是通过createStatement()
+        // 获取PreparedStatement通过preparedStatement()
+        String sql="select last_name,salary " +
+            "from briup.s_emp " +
+            "where last_name=?";
+        // 在预编译SQL中，使用“?”做占位符
+        // 该占位符所代表的具体数据值，需要使用
+        // PreparedStatement对象通过set方法设置
+        PreparedStatement pstat=
+            conn.prepareStatement(sql);
+        pstat.setString(1,name);
+        ResultSet rs=pstat.executeQuery();
+        while(rs.next()){
+            String last_name=rs.getString(1);
+            int salary=rs.getInt(2);
+            System.out.println(last_name+"::"+salary);
+        }
+    }
 }
